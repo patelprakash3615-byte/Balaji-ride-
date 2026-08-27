@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Balaji Ride - Booking</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#111;color:#fff}
+.container{max-width:520px;margin:auto;padding:18px}
+.card{background:#1e1e1e;border-radius:22px;padding:22px;box-shadow:0 8px 30px #0006}
+.logo{width:88px;height:88px;border-radius:50%;background:#2b2b2b;display:flex;align-items:center;justify-content:center;font-size:40px;margin:0 auto 12px}
+h1{text-align:center;margin:5px 0;font-size:32px}
+.sub{text-align:center;color:#bbb;margin-bottom:22px}
+.section{background:#292929;border-radius:16px;padding:16px;margin:14px 0}
+label{display:block;font-weight:bold;margin:10px 0 7px}
+input{width:100%;padding:14px;border:1px solid #555;border-radius:10px;background:#171717;color:#fff;font-size:16px}
+input::placeholder{color:#888}
+.options{display:flex;gap:10px}
+.option{flex:1;padding:14px 8px;border:2px solid #555;border-radius:12px;background:#171717;color:#fff;font-weight:bold;font-size:16px;cursor:pointer}
+.option.active{border-color:#25D366;background:#193b29}
+.calc{width:100%;border:0;border-radius:12px;padding:15px;background:#25D366;color:#fff;font-size:17px;font-weight:bold;margin-top:12px;cursor:pointer}
+.fare{display:none;text-align:center;background:#171717;border-radius:12px;padding:15px;margin-top:12px}
+.fare .amount{font-size:30px;font-weight:bold;margin:6px 0}
+.btn{display:block;text-decoration:none;text-align:center;padding:15px;margin:12px 0;border-radius:12px;font-size:18px;font-weight:bold}
+.whatsapp{background:#25D366;color:#fff}
+.call{background:#fff;color:#111}
+.note{color:#aaa;font-size:13px;line-height:1.5}
+.small{color:#aaa;font-size:13px;text-align:center;margin-top:20px}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="card">
+<div class="logo">🏍️</div>
+<h1>Balaji Ride</h1>
+<div class="sub">Bike & Taxi Booking</div>
+
+<div class="section">
+<label>📍 Pickup Location</label>
+<input id="pickup" type="text" placeholder="अपना pickup location लिखें">
+
+<label>🏁 Drop Location</label>
+<input id="drop" type="text" placeholder="अपना drop location लिखें">
+
+<label>🚘 Ride चुनें</label>
+<div class="options">
+<button class="option active" id="bike" onclick="selectRide('bike')">🏍️ Bike Ride</button>
+<button class="option" id="taxi" onclick="selectRide('taxi')">🚕 Taxi Ride</button>
+</div>
+
+<label>📏 Distance (km)</label>
+<input id="distance" type="number" min="0" step="0.1" placeholder="जैसे 5">
+
+<button class="calc" onclick="calculateFare()">किराया देखें</button>
+
+<div class="fare" id="fareBox">
+<div id="rideName"></div>
+<div class="amount" id="fareAmount">₹0</div>
+<div id="fareDetails"></div>
+</div>
+</div>
+
+<a class="btn whatsapp" id="whatsapp" href="#" target="_blank" onclick="bookWhatsApp(event)">📱 WhatsApp से Booking</a>
+<a class="btn call" href="tel:+917073811051">📞 Call Now</a>
+
+<div class="section note">
+<b>किराया:</b> Bike Ride ₹12/km. Taxi Ride अभी ₹20/km सेट है। Taxi का rate बदलना हो तो project में rate बदला जा सकता है।
+</div>
+
+<div class="small">© Balaji Ride</div>
+</div>
+</div>
+
+<script>
+let selectedRide = "bike";
+const rates = { bike: 12, taxi: 20 };
+
+function selectRide(type){
+  selectedRide = type;
+  document.getElementById("bike").classList.toggle("active", type==="bike");
+  document.getElementById("taxi").classList.toggle("active", type==="taxi");
+  document.getElementById("fareBox").style.display="none";
+}
+
+function calculateFare(){
+  const km = parseFloat(document.getElementById("distance").value);
+  if(!km || km <= 0){
+    alert("कृपया Distance (km) भरें।");
+    return;
+  }
+  const fare = km * rates[selectedRide];
+  const name = selectedRide==="bike" ? "🏍️ Bike Ride" : "🚕 Taxi Ride";
+  document.getElementById("rideName").textContent = name;
+  document.getElementById("fareAmount").textContent = "₹" + fare.toFixed(0);
+  document.getElementById("fareDetails").textContent = km + " km × ₹" + rates[selectedRide] + "/km";
+  document.getElementById("fareBox").style.display="block";
+}
+
+function bookWhatsApp(e){
+  e.preventDefault();
+  const pickup = document.getElementById("pickup").value.trim();
+  const drop = document.getElementById("drop").value.trim();
+  const km = document.getElementById("distance").value.trim();
+  const name = selectedRide==="bike" ? "Bike Ride" : "Taxi Ride";
+  if(!pickup || !drop){
+    alert("कृपया Pickup और Drop Location भरें।");
+    return;
+  }
+  let msg = "Namaste Balaji Ride,%0A%0A" +
+            "Ride: " + encodeURIComponent(name) + "%0A" +
+            "Pickup: " + encodeURIComponent(pickup) + "%0A" +
+            "Drop: " + encodeURIComponent(drop);
+  if(km){
+    const fare = parseFloat(km) * rates[selectedRide];
+    msg += "%0ADistance: " + encodeURIComponent(km + " km") +
+           "%0AEstimated Fare: " + encodeURIComponent("₹" + fare.toFixed(0));
+  }
+  window.open("https://wa.me/917073811051?text="+msg, "_blank");
+}
+</script>
+</body>
+</html>
