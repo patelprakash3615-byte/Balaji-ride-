@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Balaji Ride - Booking</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial,sans-serif;background:#111;color:#fff}
@@ -16,17 +17,40 @@ h1{text-align:center;margin:5px 0;font-size:32px}
 label{display:block;font-weight:bold;margin:10px 0 7px}
 input{width:100%;padding:14px;border:1px solid #555;border-radius:10px;background:#171717;color:#fff;font-size:16px}
 input::placeholder{color:#888}
+.location-wrapper{position:relative}
+.location-btn{position:absolute;right:12px;top:12px;background:#25D366;border:none;color:#fff;padding:8px 12px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:bold}
+.location-btn:hover{background:#1eaa4f}
+.location-status{font-size:12px;color:#25D366;margin-top:5px;display:none}
 .options{display:flex;gap:10px}
 .option{flex:1;padding:14px 8px;border:2px solid #555;border-radius:12px;background:#171717;color:#fff;font-weight:bold;font-size:16px;cursor:pointer}
 .option.active{border-color:#25D366;background:#193b29}
 .calc{width:100%;border:0;border-radius:12px;padding:15px;background:#25D366;color:#fff;font-size:17px;font-weight:bold;margin-top:12px;cursor:pointer}
+.calc:hover{background:#1eaa4f}
 .fare{display:none;text-align:center;background:#171717;border-radius:12px;padding:15px;margin-top:12px}
 .fare .amount{font-size:30px;font-weight:bold;margin:6px 0}
 .btn{display:block;text-decoration:none;text-align:center;padding:15px;margin:12px 0;border-radius:12px;font-size:18px;font-weight:bold}
 .whatsapp{background:#25D366;color:#fff}
+.whatsapp:hover{background:#1eaa4f}
 .call{background:#fff;color:#111}
+.call:hover{background:#f0f0f0}
 .note{color:#aaa;font-size:13px;line-height:1.5}
 .small{color:#aaa;font-size:13px;text-align:center;margin-top:20px}
+.booking-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center}
+.booking-modal.active{display:flex}
+.modal-content{background:#1e1e1e;border-radius:20px;padding:25px;max-width:400px;width:90%;box-shadow:0 10px 40px #000}
+.modal-close{float:right;font-size:24px;cursor:pointer;color:#aaa}
+.modal-close:hover{color:#fff}
+.booking-details{text-align:left;margin:15px 0;padding:12px;background:#292929;border-radius:10px}
+.booking-details p{margin:8px 0;font-size:14px}
+.booking-details strong{color:#25D366}
+.modal-buttons{display:flex;gap:10px;margin-top:20px}
+.modal-btn{flex:1;padding:12px;border:none;border-radius:10px;font-weight:bold;cursor:pointer;font-size:16px}
+.confirm-btn{background:#25D366;color:#fff}
+.cancel-btn{background:#555;color:#fff}
+.confirm-btn:hover{background:#1eaa4f}
+.cancel-btn:hover{background:#666}
+.booking-ref{color:#25D366;font-weight:bold;font-size:14px;margin-top:10px}
+.status-loading{color:#25D366;font-size:12px;margin-top:8px}
 </style>
 </head>
 <body>
@@ -38,7 +62,11 @@ input::placeholder{color:#888}
 
 <div class="section">
 <label>📍 Pickup Location</label>
+<div class="location-wrapper">
 <input id="pickup" type="text" placeholder="अपना pickup location लिखें">
+<button class="location-btn" onclick="getPickupLocation()" title="Current Location">📍 Use Current</button>
+</div>
+<div class="location-status" id="pickupStatus"></div>
 
 <label>🏁 Drop Location</label>
 <input id="drop" type="text" placeholder="अपना drop location लिखें">
@@ -61,26 +89,90 @@ input::placeholder{color:#888}
 </div>
 </div>
 
-<a class="btn whatsapp" id="whatsapp" href="#" target="_blank" onclick="bookWhatsApp(event)">📱 WhatsApp से Booking</a>
+<a class="btn whatsapp" id="whatsapp" href="#" onclick="openBookingModal(event)">📱 WhatsApp से Booking</a>
 <a class="btn call" href="tel:+917073811051">📞 Call Now</a>
 
 <div class="section note">
-<b>किराया:</b> Bike Ride ₹12/km. Taxi Ride अभी ₹15/km सेट है। Taxi का rate बदलना हो तो project में rate बदला जा सकता है।
+<b>किराया:</b> Bike Ride ₹12/km. Taxi Ride ₹15/km. Live Location से आपका current location automatically pickup में भर जाएगा।
 </div>
 
-<div class="small">© Balaji Ride</div>
+<div class="small">© Balaji Ride | Secure Booking</div>
+</div>
+</div>
+
+<!-- Booking Modal -->
+<div class="booking-modal" id="bookingModal">
+<div class="modal-content">
+<span class="modal-close" onclick="closeBookingModal()">&times;</span>
+<h2 style="text-align:center;margin-top:0">✅ Booking Confirm करें</h2>
+
+<div class="booking-details">
+<p><strong>Ride Type:</strong> <span id="modalRideType">Bike Ride</span></p>
+<p><strong>Pickup:</strong> <span id="modalPickup">Location</span></p>
+<p><strong>Drop:</strong> <span id="modalDrop">Location</span></p>
+<p><strong>Distance:</strong> <span id="modalDistance">0</span> km</p>
+<p><strong>Estimated Fare:</strong> <span id="modalFare">₹0</span></p>
+</div>
+
+<div class="booking-ref" id="bookingRef"></div>
+<div class="status-loading" id="statusLoading"></div>
+
+<div class="modal-buttons">
+<button class="modal-btn confirm-btn" onclick="confirmBooking()">Confirm & Send</button>
+<button class="modal-btn cancel-btn" onclick="closeBookingModal()">Cancel</button>
+</div>
 </div>
 </div>
 
 <script>
 let selectedRide = "bike";
 const rates = { bike: 12, taxi: 15 };
+const WHATSAPP_NUMBER = "917073811051";
 
 function selectRide(type){
   selectedRide = type;
   document.getElementById("bike").classList.toggle("active", type==="bike");
   document.getElementById("taxi").classList.toggle("active", type==="taxi");
   document.getElementById("fareBox").style.display="none";
+}
+
+function getPickupLocation(){
+  const statusDiv = document.getElementById("pickupStatus");
+  statusDiv.style.display = "block";
+  statusDiv.textContent = "📍 Location ढूंढ रहे हैं...";
+  
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(
+      function(position){
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        
+        // Nominatim API से address reverse geocode करने के लिए
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
+          .then(res => res.json())
+          .then(data => {
+            const address = data.address.city || data.address.town || data.address.village || `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+            document.getElementById("pickup").value = address;
+            statusDiv.textContent = "✅ Location मिल गया!";
+            statusDiv.style.color = "#25D366";
+            setTimeout(() => statusDiv.style.display = "none", 2000);
+          })
+          .catch(err => {
+            document.getElementById("pickup").value = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+            statusDiv.textContent = "✅ GPS Coordinates भर दिए";
+            statusDiv.style.color = "#25D366";
+            setTimeout(() => statusDiv.style.display = "none", 2000);
+          });
+      },
+      function(){
+        statusDiv.textContent = "❌ Location permission denied";
+        statusDiv.style.color = "#ff6b6b";
+        setTimeout(() => statusDiv.style.display = "none", 3000);
+      }
+    );
+  } else {
+    alert("आपका browser Location को support नहीं करता।");
+  }
 }
 
 function calculateFare(){
@@ -97,27 +189,105 @@ function calculateFare(){
   document.getElementById("fareBox").style.display="block";
 }
 
-function bookWhatsApp(e){
+function openBookingModal(e){
   e.preventDefault();
   const pickup = document.getElementById("pickup").value.trim();
   const drop = document.getElementById("drop").value.trim();
   const km = document.getElementById("distance").value.trim();
-  const name = selectedRide==="bike" ? "Bike Ride" : "Taxi Ride";
-  if(!pickup || !drop){
-    alert("कृपया Pickup और Drop Location भरें।");
+  
+  if(!pickup || !drop || !km){
+    alert("कृपया सभी Details भरें (Pickup, Drop, Distance)।");
     return;
   }
-  let msg = "Namaste Balaji Ride,%0A%0A" +
-            "Ride: " + encodeURIComponent(name) + "%0A" +
-            "Pickup: " + encodeURIComponent(pickup) + "%0A" +
-            "Drop: " + encodeURIComponent(drop);
-  if(km){
-    const fare = parseFloat(km) * rates[selectedRide];
-    msg += "%0ADistance: " + encodeURIComponent(km + " km") +
-           "%0AEstimated Fare: " + encodeURIComponent("₹" + fare.toFixed(0));
-  }
-  window.open("https://wa.me/917073811051?text="+msg, "_blank");
+  
+  const name = selectedRide==="bike" ? "Bike Ride" : "Taxi Ride";
+  const fare = parseFloat(km) * rates[selectedRide];
+  const bookingRef = generateBookingReference();
+  
+  document.getElementById("modalRideType").textContent = name;
+  document.getElementById("modalPickup").textContent = pickup;
+  document.getElementById("modalDrop").textContent = drop;
+  document.getElementById("modalDistance").textContent = km;
+  document.getElementById("modalFare").textContent = "₹" + fare.toFixed(0);
+  document.getElementById("bookingRef").textContent = "📌 Booking Ref: " + bookingRef;
+  document.getElementById("bookingModal").classList.add("active");
+  
+  // Store booking data
+  window.currentBooking = {
+    ref: bookingRef,
+    ride: name,
+    pickup: pickup,
+    drop: drop,
+    distance: km,
+    fare: fare.toFixed(0)
+  };
 }
+
+function closeBookingModal(){
+  document.getElementById("bookingModal").classList.remove("active");
+}
+
+function generateBookingReference(){
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const random = Math.random().toString(36).substr(2, 5).toUpperCase();
+  return "BR-" + timestamp + "-" + random;
+}
+
+function confirmBooking(){
+  const statusDiv = document.getElementById("statusLoading");
+  statusDiv.style.display = "block";
+  statusDiv.textContent = "⏳ WhatsApp पर भेज रहे हैं...";
+  
+  const booking = window.currentBooking;
+  
+  const msg = `🚗 *Balaji Ride - New Booking* 🚗%0A%0A` +
+              `📌 *Booking Reference:* ${booking.ref}%0A` +
+              `🚘 *Ride Type:* ${booking.ride}%0A` +
+              `📍 *Pickup:* ${booking.pickup}%0A` +
+              `🏁 *Drop:* ${booking.drop}%0A` +
+              `📏 *Distance:* ${booking.distance} km%0A` +
+              `💵 *Estimated Fare:* ₹${booking.fare}%0A%0A` +
+              `⏰ *Booking Time:* ${new Date().toLocaleString('hi-IN')}%0A%0A` +
+              `✅ कृपया Confirm करें और Driver को assign करें।%0A%0A` +
+              `🔗 *Booking Link:* ${window.location.href}?ref=${booking.ref}`;
+  
+  setTimeout(() => {
+    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, "_blank");
+    statusDiv.textContent = "✅ WhatsApp खुल गया!";
+    statusDiv.style.color = "#25D366";
+    
+    setTimeout(() => {
+      alert("✅ Booking Successful!\n\nBooking Reference: " + booking.ref + "\n\nDriver को notification मिल गया। कुछ देर में Driver आपसे Contact करेगा।");
+      closeBookingModal();
+    }, 1000);
+  }, 1500);
+}
+
+// Page load - अगर booking ref URL में है तो show करें
+window.addEventListener('load', function(){
+  const params = new URLSearchParams(window.location.search);
+  const ref = params.get('ref');
+  
+  if(ref){
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #25D366;
+      color: #fff;
+      padding: 15px 20px;
+      border-radius: 10px;
+      z-index: 999;
+      font-weight: bold;
+    `;
+    notification.textContent = "📌 Booking Ref: " + ref + " - Driver को assign हो चुका है!";
+    document.body.appendChild(notification);
+    
+    setTimeout(() => notification.remove(), 5000);
+  }
+});
 </script>
 </body>
 </html>
