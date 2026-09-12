@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Balaji Ride - Admin Dashboard</title>
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; font-family: Arial, sans-serif; background: #0a0e27; color: #fff; }
+.container { max-width: 1200px; margin: auto; padding: 20px; }
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #25D366; }
+.logo { font-size: 32px; font-weight: bold; }
+.logout { background: #ff4444; padding: 10px 20px; border: none; border-radius: 8px; color: #fff; cursor: pointer; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+.stat-card { background: #1e1e1e; padding: 20px; border-radius: 12px; border-left: 4px solid #25D366; }
+.stat-card h3 { margin: 0 0 10px; font-size: 14px; color: #aaa; }
+.stat-card .value { font-size: 32px; font-weight: bold; color: #25D366; }
+.tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+.tab { padding: 10px 20px; background: #1e1e1e; border: 2px solid #555; border-radius: 8px; color: #fff; cursor: pointer; font-weight: bold; }
+.tab.active { background: #25D366; border-color: #25D366; color: #000; }
+.table-container { background: #1e1e1e; border-radius: 12px; padding: 20px; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+table th { background: #2b2b2b; padding: 12px; text-align: left; font-weight: bold; color: #25D366; }
+table td { padding: 12px; border-bottom: 1px solid #333; }
+table tr:hover { background: #252525; }
+.status { display: inline-block; padding: 5px 12px; border-radius: 6px; font-weight: bold; font-size: 12px; }
+.status.active { background: #25D366; color: #000; }
+.status.inactive { background: #ff4444; color: #fff; }
+.status.pending { background: #ffaa00; color: #000; }
+.btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+.btn-edit { background: #0099ff; color: #fff; }
+.btn-delete { background: #ff4444; color: #fff; }
+.btn-approve { background: #25D366; color: #000; }
+.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; }
+.modal.active { display: flex; }
+.modal-content { background: #1e1e1e; padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; }
+.modal-content h2 { margin-top: 0; color: #25D366; }
+.modal input, .modal textarea { width: 100%; padding: 10px; margin: 10px 0; background: #171717; border: 1px solid #555; border-radius: 6px; color: #fff; }
+.modal-buttons { display: flex; gap: 10px; margin-top: 20px; }
+.form-group { margin-bottom: 15px; }
+.form-group label { display: block; font-weight: bold; margin-bottom: 5px; }
+.chart-container { background: #1e1e1e; padding: 20px; border-radius: 12px; margin-top: 20px; }
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+<div class="logo">🏍️ Balaji Ride Admin</div>
+<button class="logout" onclick="logout()">Logout</button>
+</div>
+
+<div class="stats">
+<div class="stat-card">
+<h3>कुल Rides</h3>
+<div class="value" id="totalRides">124</div>
+</div>
+<div class="stat-card">
+<h3>Active Drivers</h3>
+<div class="value" id="activeDrivers">18</div>
+</div>
+<div class="stat-card">
+<h3>आज की कमाई</h3>
+<div class="value" id="todayEarnings">₹3,450</div>
+</div>
+<div class="stat-card">
+<h3>Pending Approvals</h3>
+<div class="value" id="pendingApprovals">5</div>
+</div>
+</div>
+
+<div class="tabs">
+<button class="tab active" onclick="switchTab('drivers')">🚗 Drivers</button>
+<button class="tab" onclick="switchTab('rides')">🏍️ Rides</button>
+<button class="tab" onclick="switchTab('earnings')">💰 Earnings</button>
+<button class="tab" onclick="switchTab('approvals')">✅ Approvals</button>
+</div>
+
+<!-- Drivers Tab -->
+<div id="drivers-tab" class="tab-content">
+<div style="margin-bottom: 20px;">
+<button class="btn btn-edit" onclick="openAddDriverModal()">+ नया Driver जोड़ें</button>
+</div>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>Driver Name</th>
+<th>Phone</th>
+<th>Vehicle</th>
+<th>Status</th>
+<th>Rating</th>
+<th>Actions</th>
+</tr>
+</thead>
+<tbody id="driversTable">
+<tr>
+<td>राज कुमार</td>
+<td>9876543210</td>
+<td>🏍️ Bike</td>
+<td><span class="status active">Active</span></td>
+<td>4.8/5</td>
+<td><button class="btn btn-edit" onclick="editDriver(1)">Edit</button><button class="btn btn-delete" onclick="deleteDriver(1)">Delete</button></td>
+</tr>
+<tr>
+<td>अमित शर्मा</td>
+<td>9123456789</td>
+<td>🚕 Taxi</td>
+<td><span class="status active">Active</span></td>
+<td>4.6/5</td>
+<td><button class="btn btn-edit" onclick="editDriver(2)">Edit</button><button class="btn btn-delete" onclick="deleteDriver(2)">Delete</button></td>
+</tr>
+<tr>
+<td>विजय पटेल</td>
+<td>9988776655</td>
+<td>🏍️ Bike</td>
+<td><span class="status inactive">Inactive</span></td>
+<td>4.2/5</td>
+<td><button class="btn btn-edit" onclick="editDriver(3)">Edit</button><button class="btn btn-delete" onclick="deleteDriver(3)">Delete</button></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<!-- Rides Tab -->
+<div id="rides-tab" class="tab-content" style="display:none;">
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>Ride ID</th>
+<th>Driver</th>
+<th>From</th>
+<th>To</th>
+<th>Distance</th>
+<th>Fare</th>
+<th>Status</th>
+<th>Time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>#RD001</td>
+<td>राज कुमार</td>
+<td>Downtown</td>
+<td>Airport</td>
+<td>15 km</td>
+<td>₹180</td>
+<td><span class="status active">Completed</span></td>
+<td>10:30 AM</td>
+</tr>
+<tr>
+<td>#RD002</td>
+<td>अमित शर्मा</td>
+<td>Bazaar</td>
+<td>Hospital</td>
+<td>8 km</td>
+<td>₹120</td>
+<td><span class="status active">Completed</span></td>
+<td>11:15 AM</td>
+</tr>
+<tr>
+<td>#RD003</td>
+<td>राज कुमार</td>
+<td>Station</td>
+<td>Mall</td>
+<td>12 km</td>
+<td>₹144</td>
+<td><span class="status pending">Ongoing</span></td>
+<td>2:45 PM</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<!-- Earnings Tab -->
+<div id="earnings-tab" class="tab-content" style="display:none;">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px;">
+<div class="stat-card">
+<h3>इस महीने की कमाई</h3>
+<div class="value">₹45,320</div>
+</div>
+<div class="stat-card">
+<h3>इस हफ्ते की कमाई</h3>
+<div class="value">₹12,450</div>
+</div>
+<div class="stat-card">
+<h3>Average Per Ride</h3>
+<div class="value">₹365</div>
+</div>
+</div>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>Driver</th>
+<th>Rides</th>
+<th>Earnings</th>
+<th>Commission (10%)</th>
+<th>Payout</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>राज कुमार</td>
+<td>45</td>
+<td>₹5,400</td>
+<td>₹540</td>
+<td>₹4,860</td>
+</tr>
+<tr>
+<td>अमित शर्मा</td>
+<td>38</td>
+<td>₹4,560</td>
+<td>₹456</td>
+<td>₹4,104</td>
+</tr>
+<tr>
+<td>विजय पटेल</td>
+<td>12</td>
+<td>₹1,440</td>
+<td>₹144</td>
+<td>₹1,296</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<!-- Approvals Tab -->
+<div id="approvals-tab" class="tab-content" style="display:none;">
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>Driver Name</th>
+<th>Phone</th>
+<th>Documents</th>
+<th>Status</th>
+<th>Actions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>नरेंद्र सिंह</td>
+<td>9111223344</td>
+<td>✓ License ✓ Aadhar</td>
+<td><span class="status pending">Pending</span></td>
+<td><button class="btn btn-approve" onclick="approveDriver(1)">Approve</button><button class="btn btn-delete" onclick="rejectDriver(1)">Reject</button></td>
+</tr>
+<tr>
+<td>प्रिया मिश्रा</td>
+<td>9222334455</td>
+<td>✓ License ✓ Aadhar ✓ Insurance</td>
+<td><span class="status pending">Pending</span></td>
+<td><button class="btn btn-approve" onclick="approveDriver(2)">Approve</button><button class="btn btn-delete" onclick="rejectDriver(2)">Reject</button></td>
+</tr>
+<tr>
+<td>संजीव कुमार</td>
+<td>9333445566</td>
+<td>✓ License ✗ Aadhar</td>
+<td><span class="status pending">Pending</span></td>
+<td><button class="btn btn-approve" onclick="approveDriver(3)">Approve</button><button class="btn btn-delete" onclick="rejectDriver(3)">Reject</button></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+<!-- Add Driver Modal -->
+<div id="addDriverModal" class="modal">
+<div class="modal-content">
+<h2>नया Driver जोड़ें</h2>
+<div class="form-group">
+<label>Driver का नाम</label>
+<input type="text" id="driverName" placeholder="जैसे राज कुमार">
+</div>
+<div class="form-group">
+<label>Phone Number</label>
+<input type="tel" id="driverPhone" placeholder="9876543210">
+</div>
+<div class="form-group">
+<label>Vehicle Type</label>
+<select id="vehicleType" style="width:100%; padding:10px; background:#171717; border:1px solid #555; border-radius:6px; color:#fff;">
+<option value="bike">🏍️ Bike</option>
+<option value="taxi">🚕 Taxi</option>
+</select>
+</div>
+<div class="form-group">
+<label>Vehicle Number</label>
+<input type="text" id="vehicleNumber" placeholder="जैसे DL01AB1234">
+</div>
+<div class="modal-buttons">
+<button class="btn btn-approve" onclick="saveDriver()">Save</button>
+<button class="btn btn-delete" onclick="closeAddDriverModal()">Cancel</button>
+</div>
+</div>
+</div>
+
+<script>
+function switchTab(tabName){
+  // Hide all tabs
+  document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
+  // Remove active class from all tabs
+  document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+  
+  // Show selected tab
+  document.getElementById(tabName + '-tab').style.display = 'block';
+  
+  // Add active class to clicked tab
+  event.target.classList.add('active');
+}
+
+function openAddDriverModal(){
+  document.getElementById('addDriverModal').classList.add('active');
+}
+
+function closeAddDriverModal(){
+  document.getElementById('addDriverModal').classList.remove('active');
+}
+
+function saveDriver(){
+  const name = document.getElementById('driverName').value;
+  const phone = document.getElementById('driverPhone').value;
+  const vehicle = document.getElementById('vehicleType').value;
+  const number = document.getElementById('vehicleNumber').value;
+  
+  if(!name || !phone || !number){
+    alert('कृपया सभी fields भरें');
+    return;
+  }
+  
+  alert('Driver ' + name + ' successfully added!');
+  closeAddDriverModal();
+  
+  // Clear form
+  document.getElementById('driverName').value = '';
+  document.getElementById('driverPhone').value = '';
+  document.getElementById('vehicleNumber').value = '';
+}
+
+function editDriver(id){
+  alert('Edit driver ' + id);
+}
+
+function deleteDriver(id){
+  if(confirm('क्या आप इस driver को delete करना चाहते हैं?')){
+    alert('Driver deleted');
+  }
+}
+
+function approveDriver(id){
+  if(confirm('क्या आप इस driver को approve करना चाहते हैं?')){
+    alert('Driver approved successfully!');
+  }
+}
+
+function rejectDriver(id){
+  if(confirm('क्या आप इस driver को reject करना चाहते हैं?')){
+    alert('Driver rejected');
+  }
+}
+
+function logout(){
+  if(confirm('क्या आप logout करना चाहते हैं?')){
+    window.location.href = 'index.html';
+  }
+}
+</script>
+</body>
+</html>
