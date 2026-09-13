@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Balaji Ride - Booking</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial,sans-serif;background:#111;color:#fff}
@@ -37,7 +38,7 @@ input::placeholder{color:#888}
 .small{color:#aaa;font-size:13px;text-align:center;margin-top:20px}
 .booking-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center}
 .booking-modal.active{display:flex}
-.modal-content{background:#1e1e1e;border-radius:20px;padding:25px;max-width:400px;width:90%;box-shadow:0 10px 40px #000}
+.modal-content{background:#1e1e1e;border-radius:20px;padding:25px;max-width:400px;width:90%;box-shadow:0 10px 40px #000;max-height:90vh;overflow-y:auto}
 .modal-close{float:right;font-size:24px;cursor:pointer;color:#aaa}
 .modal-close:hover{color:#fff}
 .booking-details{text-align:left;margin:15px 0;padding:12px;background:#292929;border-radius:10px}
@@ -51,6 +52,12 @@ input::placeholder{color:#888}
 .cancel-btn:hover{background:#666}
 .booking-ref{color:#25D366;font-weight:bold;font-size:14px;margin-top:10px}
 .status-loading{color:#25D366;font-size:12px;margin-top:8px}
+.qr-section{background:#292929;border-radius:16px;padding:20px;margin:14px 0;text-align:center}
+.qr-container{background:#fff;padding:15px;border-radius:12px;display:inline-block;margin:15px 0}
+.qr-container canvas{display:block;margin:0 auto}
+.qr-label{font-size:12px;color:#aaa;margin-top:10px;text-align:center}
+.qr-button{width:100%;border:0;border-radius:12px;padding:12px;background:#25D366;color:#fff;font-size:15px;font-weight:bold;margin-top:10px;cursor:pointer}
+.qr-button:hover{background:#1eaa4f}
 </style>
 </head>
 <body>
@@ -92,6 +99,15 @@ input::placeholder{color:#888}
 <a class="btn whatsapp" id="whatsapp" href="#" onclick="openBookingModal(event)">📱 WhatsApp से Booking</a>
 <a class="btn call" href="tel:+917073811051">📞 Call Now</a>
 
+<!-- QR Code Section -->
+<div class="qr-section">
+<h3 style="margin:0 0 10px 0">🔳 Balaji Ride Share करें</h3>
+<p style="font-size:13px;color:#aaa;margin:8px 0">अपने दोस्तों को यह QR Code scan करने के लिए भेजें</p>
+<div class="qr-container" id="qrcode"></div>
+<p class="qr-label">📱 इस QR Code को scan करें या नीचे की link से visit करें</p>
+<button class="qr-button" onclick="shareWebsite()">📤 QR Code Download करें</button>
+</div>
+
 <div class="section note">
 <b>किराया:</b> Bike Ride ₹12/km. Taxi Ride ₹15/km. Live Location से आपका current location automatically pickup में भर जाएगा।
 </div>
@@ -128,6 +144,38 @@ input::placeholder{color:#888}
 let selectedRide = "bike";
 const rates = { bike: 12, taxi: 15 };
 const WHATSAPP_NUMBER = "917073811051";
+const WEBSITE_URL = "https://patelprakash3615-byte.github.io/Balaji-ride/";
+
+// QR Code बनाएं
+function generateQRCode(){
+  const qrContainer = document.getElementById('qrcode');
+  qrContainer.innerHTML = ''; // पुरानी QR code हटाएं
+  
+  new QRCode(qrContainer, {
+    text: WEBSITE_URL,
+    width: 200,
+    height: 200,
+    colorDark: "#000",
+    colorLight: "#ffffff",
+    correctLevel: QRCode.CorrectLevel.H
+  });
+}
+
+// QR Code download करने के function
+function shareWebsite(){
+  const canvas = document.querySelector('#qrcode canvas');
+  if(!canvas){
+    alert("QR Code generate नहीं हुआ। कृपया page refresh करें।");
+    return;
+  }
+  
+  const link = document.createElement('a');
+  link.href = canvas.toDataURL('image/png');
+  link.download = 'Balaji-Ride-QR-Code.png';
+  link.click();
+  
+  alert('✅ QR Code download हो गया!\n\n' + WEBSITE_URL);
+}
 
 function selectRide(type){
   selectedRide = type;
@@ -249,7 +297,7 @@ function confirmBooking(){
               `💵 *Estimated Fare:* ₹${booking.fare}%0A%0A` +
               `⏰ *Booking Time:* ${new Date().toLocaleString('hi-IN')}%0A%0A` +
               `✅ कृपया Confirm करें और Driver को assign करें।%0A%0A` +
-              `🔗 *Booking Link:* ${window.location.href}?ref=${booking.ref}`;
+              `🔗 *Booking Link:* ${WEBSITE_URL}?ref=${booking.ref}`;
   
   setTimeout(() => {
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, "_blank");
@@ -263,8 +311,10 @@ function confirmBooking(){
   }, 1500);
 }
 
-// Page load - अगर booking ref URL में है तो show करें
+// Page load - QR Code generate करें
 window.addEventListener('load', function(){
+  generateQRCode();
+  
   const params = new URLSearchParams(window.location.search);
   const ref = params.get('ref');
   
